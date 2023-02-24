@@ -287,7 +287,7 @@ for(i in 1:length(V.theta1 )){
   for (j in 1:length(V.theta2 )){
     V.lp[i,j] <- logp(c(V.theta1[i],V.theta2[j])) }}
 
-# plot the SSE surface 
+# plot the Log likelihood surface 
 
 pdf(file="posterior.pdf",8,8) 
 
