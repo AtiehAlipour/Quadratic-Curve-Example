@@ -468,6 +468,7 @@ dev.off()
 
 
 # Plot the parameters densities for different seeds
+
 pdf(file="seeds_parameter.pdf",8,10)  
 par( mfrow= c(2,1))
 par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
@@ -482,21 +483,47 @@ for(i in 1:length(seeds)){
 names[i+1] <- "true value"
 
 # Plot
-plot(density(chain1[1000:j,1]),main="",xlab ="theta1",xlim=c(-12,-9),ylim=c(0,1.5),col = rgb(1, 0, 0))
+plot(density(chain1[50000:100000,1]),main="",xlab ="theta1",xlim=c(-12,-9),ylim=c(0,1.5),col = rgb(1, 0, 0))
 for(i in 2:length(seeds)) {
-  lines(density(chain1[1000:j,i]),col = rgb(matrix(colors_red[i,], ncol = 3)))}
+  lines(density(chain1[50000:100000,i]),col = rgb(matrix(colors_red[i,], ncol = 3)))}
 abline(v = True_theta1, lwd = 2, lty = 1,col="black");
 legend("topright", names,
        lty=1, lwd = 3, col = rgb(colors_red))
 
 par(fig=c(0,1,0.05,0.55), new=TRUE)
 
-plot(density(chain2[1000:j,1]),main="",xlab ="theta2",xlim=c(-3,5),ylim=c(0,0.6),col = rgb(0, 0, 1))
+plot(density(chain2[50000:100000,1]),main="",xlab ="theta2",xlim=c(-3,5),ylim=c(0,0.6),col = rgb(0, 0, 1))
 for(i in 2:length(seeds)) {
-  lines(density(chain2[1000:j,i]),col = rgb(matrix(colors_blue[i,], ncol = 3)))}
+  lines(density(chain2[50000:100000,i]),col = rgb(matrix(colors_blue[i,], ncol = 3)))}
 abline(v = True_theta2, lwd = 2, lty = 1,col="black");
 legend("topright", names,
        lty=1, lwd = 3, col = rgb(colors_blue))
+
+dev.off()
+
+
+
+# Compare and plot the parameters densities using mcmc and bootstrapping
+
+pdf(file="boots_vs_mcmc_parameter.pdf",10,10)  
+par( mfrow= c(2,1))
+par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
+
+
+# Plot
+plot(density(chain1[50000:100000,1]),main="",xlab ="theta1",xlim=c(-12,-9),ylim=c(0,1.5),col = "red")
+lines(density(boot.par[,1]),col = "orange")
+abline(v = True_theta1, lwd = 2, lty = 1,col="black");
+legend("topleft", c("theta1 estimation using mcmc","theta1 estimation using bootstrapping"),
+       lty=1, lwd = 3, col = c("red","orange"))
+
+par(fig=c(0,1,0.05,0.55), new=TRUE)
+
+plot(density(chain2[50000:100000,1]),main="",xlab ="theta2",xlim=c(-3,5),ylim=c(0,0.6),col = "blue")
+lines(density(boot.par[,2]),col = "cyan")
+abline(v = True_theta2, lwd = 2, lty = 1,col="black");
+legend("topleft", c("theta2 estimation using mcmc","theta2 estimation using bootstrapping"),
+       lty=1, lwd = 3, col = c("blue","cyan"))
 
 dev.off()
 
@@ -655,12 +682,12 @@ BASS_result <- matrix(c(mean(BASS_sensitivity$S[ ,1]),
 Result_sensitivity <- matrix(c(sobol_result, BASS_result),nrow=2,ncol=5,byrow=TRUE)
 colnames(Result_sensitivity ) <- c("theta1-first-order", "theta2-first-order",  "theta2-total-effect", "theta2-total-effect","theta1/theta2-second-order")
 
-pdf(file="Sensitivity_Analysis.pdf",12,7)  
+pdf(file="Sensitivity_Analysis.pdf",14,7)  
 par(fig=c(0,1,0.05,1),mar = c(3, 3, 2, 2))
 barplot(Result_sensitivity, beside = TRUE,cex.axis=1,
         cex.names=1,col=c("cornsilk4","orange"),ylim = c(0, 0.8),las=1)
 legend("topright", 
-       legend = c("Sobol Sensitivity Indices-Full model","Sobol Sensitivity Indices-BASS-Emulation"), 
+       legend = c("Sobol Sensitivity Indices-Full model-130000 model runs","Sobol Sensitivity Indices-BASS-Emulation- 200 model runs"), 
        fill = c("cornsilk4", "orange"))
 
 dev.off()
