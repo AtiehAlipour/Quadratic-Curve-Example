@@ -514,16 +514,16 @@ par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
 plot(density(chain1[50000:100000,1]),main="",xlab ="theta1",xlim=c(-12,-9),ylim=c(0,1.5),col = "red")
 lines(density(boot.par[,1]),col = "orange")
 abline(v = True_theta1, lwd = 2, lty = 1,col="black");
-legend("topleft", c("theta1 estimation using mcmc","theta1 estimation using bootstrapping"),
-       lty=1, lwd = 3, col = c("red","orange"))
+legend("topleft", c("theta1 estimation using mcmc","theta1 estimation using bootstrapping","theta1 true value"),
+       lty=1, lwd = 3, col = c("red","orange","black"))
 
 par(fig=c(0,1,0.05,0.55), new=TRUE)
 
 plot(density(chain2[50000:100000,1]),main="",xlab ="theta2",xlim=c(-3,5),ylim=c(0,0.6),col = "blue")
 lines(density(boot.par[,2]),col = "cyan")
 abline(v = True_theta2, lwd = 2, lty = 1,col="black");
-legend("topleft", c("theta2 estimation using mcmc","theta2 estimation using bootstrapping"),
-       lty=1, lwd = 3, col = c("blue","cyan"))
+legend("topleft", c("theta2 estimation using mcmc","theta2 estimation using bootstrapping","theta2 true value"),
+       lty=1, lwd = 3, col = c("blue","cyan","black"))
 
 dev.off()
 
