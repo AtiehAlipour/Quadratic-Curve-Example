@@ -37,7 +37,7 @@ graphics.off()
 
 # Install necessary Packages
 
-list.of.packages <- c("BASS","lhs","caTools","Metrics","sensobol","plotrix","boot")
+list.of.packages <- c("BASS","lhs","caTools","Metrics","sensobol","plotrix")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -49,7 +49,8 @@ library(caTools)
 library(Metrics)
 library(sensobol)
 library(plotrix)
-library(boot)
+
+
 
 #######################################################################################
 # Define a seed for reproducibility
@@ -276,9 +277,57 @@ logp = function(theta){
   return(log.posterior)
 }
 
+
+# posterior likelihood scan
+
+# Generate x,y,z for the contour plot
+
+V.lp=mat.or.vec(length(V.theta1), length(V.theta2))
+for(i in 1:length(V.theta1 )){
+  for (j in 1:length(V.theta2 )){
+    V.lp[i,j] <- logp(c(V.theta1[i],V.theta2[j])) }}
+
+# plot the SSE surface 
+
+pdf(file="posterior.pdf",8,8) 
+
+par( mfrow= c(2,2))
+
+par(fig=c(0,1,0.4,1),mar=c(4,4,4,4))
+contour(V.theta1, V.theta2, 
+        V.lp,levels = ceiling(seq(max(V.lp)-sd(V.lp),max(V.lp),sd(V.lp)/10)),
+        col = hcl.colors(11,"heat") ,lwd=2,xlab="theta1", ylab="theta2")
+abline(h = V.theta2[100], lwd = 3,lty=2,col="darkgrey");
+abline(v = V.theta1[100], lwd = 3,lty=2,col="darkgrey");
+legend("bottomright", c("loglikelihood-Contours", "theta1-fixed","theta2-fixed"),
+       lty=c(1,2,2),lwd=c(2,2,2), col = c("darkred","darkgrey","darkgrey"),)
+
+par(fig=c(0,0.5,0.05,0.47), new=TRUE)
+plot(V.theta2,V.lp[100,], type="l",col="darkred", lwd=2, xlab="theta2", ylab="loglikelihood")
+legend("bottomright", c("loglikelihood for fixed theta1"),lty=c(1),lwd=c(2), col = c("darkred"))
+
+par(fig=c(0.5,1,0.05,0.47), new=TRUE)
+plot(V.theta1,V.lp[,100], type="l",col="darkred", lwd=2, xlab="theta1", ylab="loglikelihood")
+legend("bottomleft", c("loglikelihood for fixed theta2"),lty=c(1),lwd=c(2), col = c("darkred"))
+
+dev.off()   
+
+
 # Set the number of MCMC iterations.
 NI = 100000
 
+#Perform the analysis for three different seeds
+seeds <-c(301,302,303)
+
+
+chain1<-mat.or.vec(NI, length(seeds)) 
+chain2<-mat.or.vec(NI, length(seeds)) 
+
+for (s in 1:length(seeds)) {
+  
+set.seed(seeds[s])
+  
+  
 # Start with some initial state of parameter estimates, theta^initial
 theta1.init = runif(1, -20, 0) # Arbitrary choices.
 theta2.init = runif(1, -20, 20)  
@@ -294,7 +343,6 @@ lp.max = lp                # the maximum of the log posterior
 theta.new = rep(NA,2)      # proposed new parameters (theta^new)
 accepts = 0                # how many times the proposed new parameters are accepted
 mcmc.chains = array(dim=c(NI,2)) # and a chain of accepted parameters
-mcmc.lp = array(dim=c(NI)) # and a chain of likelihood
 
 # Set the step size for the MCMC.
 step = c(0.1, 0.1)
@@ -335,40 +383,133 @@ for(i in 1:NI) {
   # Append the parameter estimate to the chain. This will generate a series of parameter
   # values (theta_0, theta_1, ...). 
   mcmc.chains[i,] = theta
-  mcmc.lp[i]=lp+0 #(log.prior = 0)
 }
+
 
 #Checking the acceptance rate
 # Calculate the parameter acceptance rate; it should be higher than 23.4%.
 accept.rate <- (accepts/NI) * 100
 print(accept.rate)
 
-# plot an example chain member
+chain1[,s] <- mcmc.chains[,1]
+chain2[,s] <- mcmc.chains[,2]}
+
+
+for(j in 1:NI){
+  theta1_seeds_CI <- 2*qt(0.975,length(seeds))*sd(chain1[j,])/sqrt(length(seeds))
+  if (theta1_seeds_CI<=0.05){break}}
+
+for(k in 1:NI){
+  theta2_seeds_CI <- 2*qt(0.975,length(seeds))*sd(chain2[k,])/sqrt(length(seeds))
+  if (theta2_seeds_CI<=0.05){break}}
+
+
+# plot chain members convergence
+
 pdf(file="chain_parameter.pdf",10,8)  
 par( mfrow= c(2,1))
 
 par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
-plot(1:NI,mcmc.chains[,2],type="l",xlab="iterations",ylab="value",col = "red",ylim=c(-20,20))
-abline(h = True_theta2, lwd = 3,lty = 2,col="brown");
-legend("bottomright", c("theta2 estimation using MCMC", "theta2_True value"),
-       lty=c(1,2), lwd = 3, col = c("red", "brown"))
+
+#generating red color bar 
+colors_red <- mat.or.vec(length(seeds)+1, 3) 
+for (i in 1:length(seeds)){
+colors_red [i,] <- c(1/i,0,0) }
+
+#Add color black
+colors_red [i+1,] <- c(0,0,0)
+
+# theta1 label's name
+theta1_names =c()
+for(i in 1:length(seeds)){
+  theta1_names[i] <- paste("theta1 estimation using MCMC seed",as.character(i)) 
+} 
+
+#Add theta1 true value
+theta1_names[i+1] <- "theta1 true value"
+
+
+plot(1:(min(2*j,j+500)),chain1[1:min(2*j,j+500),1],type="l",xlab="iterations",ylab="value",col = rgb(1, 0, 0),ylim=c(-20,0))
+for (i in 2:length(seeds)){
+  lines(1:min(2*j,j+500),chain1[1:min(2*j,j+500),i],type="l",col = rgb(matrix(colors_red[i,], ncol = 3)))}
+abline(h = True_theta1, lwd = 3,lty = 1,col="black");
+legend("bottomright", theta1_names,
+       lty=1, lwd = 3, col = rgb(colors_red))
+
 
 par(fig=c(0,1,0.05,0.55), new=TRUE)
-plot(1:NI,mcmc.chains[,1],type="l",xlab="iterations",ylab="value",col = "blue",ylim=c(-20,0))
-abline(h = True_theta1, lwd = 3, lty = 2,col="black");
-legend("bottomright", c("theta1 estimation using MCMC", "theta1_True value"),
-       lty=c(1,2), lwd = 3, col = c("blue","black"))
+
+#generating blue color bar 
+colors_blue<- mat.or.vec(length(seeds)+1, 3) 
+for (i in 1:length(seeds)){
+  colors_blue [i,] <- c(0,0,1/i) }
+
+#Add color black
+colors_blue[i+1,] <- c(0,0,0)
+
+# theta2 label's name
+theta2_names =c()
+for(i in 1:length(seeds)){
+  theta2_names[i] <- paste("theta2 estimation using MCMC seed",as.character(i)) 
+} 
+
+#Add theta2 true value
+theta2_names[i+1] <- "theta 2 true value"
+
+
+plot(1:(min(2*k,k+500)),chain2[1:min(2*k,k+500),1],type="l",xlab="iterations",ylab="value",col = rgb(0, 0, 1),ylim=c(-20,20))
+for (i in 2:length(seeds)){
+  lines(1:min(2*k,k+500),chain2[1:min(2*k,k+500),i],type="l",col=rgb(matrix(colors_blue[i,], ncol = 3)))}
+abline(h = True_theta2, lwd = 2, lty = 1,col="black");
+legend("bottomright", theta2_names,
+       lty=1, lwd = 3, col = rgb(colors_blue))
 dev.off() 
+
+
+
+# Plot the parameters densities for different seeds
+pdf(file="seeds_parameter.pdf",8,10)  
+par( mfrow= c(2,1))
+par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
+
+# label's name
+names =c()
+for(i in 1:length(seeds)){
+  names[i] <- paste("seed",as.character(i)) 
+} 
+
+#Add true value
+names[i+1] <- "true value"
+
+# Plot
+plot(density(chain1[1000:j,1]),main="",xlab ="theta1",xlim=c(-12,-9),ylim=c(0,1.5),col = rgb(1, 0, 0))
+for(i in 2:length(seeds)) {
+  lines(density(chain1[1000:j,i]),col = rgb(matrix(colors_red[i,], ncol = 3)))}
+abline(v = True_theta1, lwd = 2, lty = 1,col="black");
+legend("topright", names,
+       lty=1, lwd = 3, col = rgb(colors_red))
+
+par(fig=c(0,1,0.05,0.55), new=TRUE)
+
+plot(density(chain2[1000:j,1]),main="",xlab ="theta2",xlim=c(-3,5),ylim=c(0,0.6),col = rgb(0, 0, 1))
+for(i in 2:length(seeds)) {
+  lines(density(chain2[1000:j,i]),col = rgb(matrix(colors_blue[i,], ncol = 3)))}
+abline(v = True_theta2, lwd = 2, lty = 1,col="black");
+legend("topright", names,
+       lty=1, lwd = 3, col = rgb(colors_blue))
+
+dev.off()
+
 
 
 # Generate the fit curves using last 10000 simulations
 Fit_model_MCMC<- mat.or.vec(10000, length(X))
 for(j in 1:10000){
-for (i in 1:length(X)){
-  Fit_model_MCMC[j,i] <- Y(mcmc.chains[length(mcmc.chains)/2-j,1],
-                           mcmc.chains[length(mcmc.chains)/2-j,2],X[i])+
-                            rnorm(1,mean=0,sd=sigma_obs)
-}
+  for (i in 1:length(X)){
+    Fit_model_MCMC[j,i] <- Y(mcmc.chains[length(mcmc.chains)/2-j,1],
+                             mcmc.chains[length(mcmc.chains)/2-j,2],X[i])+
+      rnorm(1,mean=0,sd=sigma_obs)
+  }
 }
 
 
@@ -376,7 +517,6 @@ for (i in 1:length(X)){
 
 Fit.mcmc.CI = mat.or.vec(length(X), 2)
 Fit.mcmc.mean = c()
-
 
 for(i in 1:length(X)){  
   Fit.mcmc.CI[i,] <- quantile(Fit_model_MCMC[,i], probs = c(.05, .95))
@@ -457,23 +597,8 @@ Range <- S$results$high.ci[(d+1):(2*d)]-S$results$low.ci[(d+1):(2*d)]
 if (all(Range<=0.05)){print("converged")}
 
 
-# Display the results and save them in a pdf file ###
+# save the results
 sobol_result <- matrix(S$results$original,nrow=1,ncol=5,byrow = FALSE)
-colnames(sobol_result) <- c("theta1", "theta2", 
-                            "theta1", "theta2","theta1-theta2")
-
-pdf(file="Sobol_sensitivity_Analysis.pdf",10,6.17)  
-par(mar = c(3, 2, 2, 2))
-barplot(sobol_result, beside = TRUE,cex.axis=1,
-      cex.names=1,col=c("cornsilk4","cornsilk4","orange","orange","red"),ylim = c(0, 0.8),
-      legend.text = c("First order Sensitivity using the full model",
-                      "Total order Sensitivity using the full model",
-                      "Second order Sensitivity using the full model"), # Legend values
-      args.legend = list(x = "topright", inset = c(0, 0),cex=1,
-                         fill = c("cornsilk4","orange", "red"))) # Legend arguments)
-     
-dev.off()
-
 
 
 #######################################################################################
@@ -519,25 +644,24 @@ Range_S_bass[5] <- 2*qt(0.975,length(BASS_sensitivity$S[,3]))*sd(BASS_sensitivit
 if (all(Range_S_bass<=0.05)){print("converged")}
 
 
-# Display the mean sensitivity indices and save them in a pdf file ###
+# Save the BASS mean sensitivity indices
 BASS_result <- matrix(c(mean(BASS_sensitivity$S[ ,1]),
                         mean(BASS_sensitivity$S[ ,2]),mean(BASS_sensitivity$T[ ,1]),
                         mean(BASS_sensitivity$T[ ,2]),mean(BASS_sensitivity$S[ ,3]))
                       ,nrow=1,ncol=5,byrow = FALSE)
-colnames(BASS_result) <- c("theta1", "theta2", 
-                            "theta1", "theta2","theta1-theta2")
 
-pdf(file="BASS_sensitivity_Analysis.pdf",10,6.17)  
-par(mar = c(3, 2, 2, 2))
-barplot(BASS_result, beside = TRUE,cex.axis=1,
-        cex.names=1,col=c("cornsilk4","cornsilk4",
-                          "orange","orange","red"),ylim = c(0, 0.8),
-        legend.text = c("First order Sensitivity using BASS","Total order Sensitivity using BASS",
-                        "Second order Sensitivity using BASS"), # Legend values
-        args.legend = list(x = "topright", inset = c(0, 0),cex=1,
-                           fill = c("cornsilk4","orange", "red"))) # Legend arguments)
+# Plot and save the results from both analyses in a pdf file 
+
+Result_sensitivity <- matrix(c(sobol_result, BASS_result),nrow=2,ncol=5,byrow=TRUE)
+colnames(Result_sensitivity ) <- c("theta1-first-order", "theta2-first-order",  "theta2-total-effect", "theta2-total-effect","theta1/theta2-second-order")
+
+pdf(file="Sensitivity_Analysis.pdf",12,7)  
+par(fig=c(0,1,0.05,1),mar = c(3, 3, 2, 2))
+barplot(Result_sensitivity, beside = TRUE,cex.axis=1,
+        cex.names=1,col=c("cornsilk4","orange"),ylim = c(0, 0.8),las=1)
+legend("topright", 
+       legend = c("Sobol Sensitivity Indices-Full model","Sobol Sensitivity Indices-BASS-Emulation"), 
+       fill = c("cornsilk4", "orange"))
 
 dev.off()
-
-
 
