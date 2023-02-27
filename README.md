@@ -1,2 +1,2 @@
-# Quadratic-Curve-Example
-Users can utilize this framework to learn how to generate and analyze a model using observational data
+# Workflow-Example
+This is a toy example of model convergence and sensitivity analysis.
