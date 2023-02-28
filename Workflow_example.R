@@ -704,7 +704,7 @@ if (all(Range<=0.05)){print("converged")}
 
 
 # save the results
-sobol_result <- matrix(S$results$original,nrow=1,ncol=5,byrow = FALSE)
+sobol_result <- matrix(c(S$results$original[3],S$results$original[4],S$results$original[1],S$results$original[2],S$results$original[5]),nrow=1,ncol=5,byrow = FALSE)
 
 
 #######################################################################################
@@ -751,22 +751,22 @@ if (all(Range_S_bass<=0.05)){print("converged")}
 
 
 # Save the BASS mean sensitivity indices
-BASS_result <- matrix(c(mean(BASS_sensitivity$S[ ,1]),
-                        mean(BASS_sensitivity$S[ ,2]),mean(BASS_sensitivity$T[ ,1]),
-                        mean(BASS_sensitivity$T[ ,2]),mean(BASS_sensitivity$S[ ,3]))
+BASS_result <- matrix(c(mean(BASS_sensitivity$T[ ,1]),
+                        mean(BASS_sensitivity$T[ ,2]),mean(BASS_sensitivity$S[ ,1]),
+                        mean(BASS_sensitivity$S[ ,2]),mean(BASS_sensitivity$S[ ,3]))
                       ,nrow=1,ncol=5,byrow = FALSE)
 
 # Plot and save the results from both analyses in a pdf file 
 
 Result_sensitivity <- matrix(c(sobol_result, BASS_result),nrow=2,ncol=5,byrow=TRUE)
-colnames(Result_sensitivity ) <- c("theta1-first-order", "theta2-first-order",  "theta2-total-effect", "theta2-total-effect","theta1/theta2-second-order")
+colnames(Result_sensitivity ) <- c( "theta1-total-effect", "theta2-total-effect","theta1-first-order", "theta2-first-order", "theta1/theta2-second-order")
 
 pdf(file="Sensitivity_Analysis.pdf",14,7)  
-par(fig=c(0,1,0.05,1),mar = c(3, 3, 2, 2))
+par(fig=c(0,1,0.05,1),mar = c(3, 6, 2, 2))
 barplot(Result_sensitivity, beside = TRUE,cex.axis=1,
-        cex.names=1,col=c("cornsilk4","orange"),ylim = c(0, 0.8),las=1)
+        cex.names=1,col=c("cornsilk4","orange"),ylim = c(0, 0.8),las=1,ylab="Sobol Sensitivity")
 legend("topright", 
-       legend = c("Sobol Sensitivity Indices-Full model-130000 model runs","Sobol Sensitivity Indices-BASS-Emulation- 200 model runs"), 
+       legend = c("Full model-130000 model runs","BASS-Emulation- 200 model runs"), 
        fill = c("cornsilk4", "orange"))
 
 dev.off()
