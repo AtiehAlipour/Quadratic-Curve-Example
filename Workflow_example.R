@@ -534,8 +534,7 @@ dev.off()
 
 # Compare and plot the parameters densities using bootstrapping and MCMC for the same sample number
 
-
-#sample from the mcmc chain
+#sample from an example MCMC chain
 
 set.seed(314)
 chain1_sample=c()
@@ -574,7 +573,7 @@ dev.off()
 
 
 
-# Plot and compare the last 10000 theta1 and theta2 values for MCMC and bootstrapping 
+# Plot and compare theta1 and theta2 values for MCMC and bootstrapping for the same sample number
 pdf(file="mcmc_parameters.pdf",8,10)  
 par( mfrow= c(2,1))
 par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
@@ -592,6 +591,7 @@ legend("topleft", c("Estimation using bootstrapping","Thue value"),
 dev.off()
 
 
+
 # Compare 2D density plots of parameters estimation using MCMC and bootstrapping
 pdf(file="2Ddensities.pdf",8,10)  
 par( mfrow= c(2,1))
@@ -603,6 +603,7 @@ par(fig=c(0,1,0.05,0.55), new=TRUE)
 t2 <-kde2d(boot.par[,1],boot.par[,2],n=200)
 image.plot (t2,ylab ="theta2",xlab ="theta1",  legend.args = list( text = "Density\nBootstrapping\n",cex = .8),col=rev(heat.colors(15)))
 dev.off()
+
 
 
 # Generate the fit curves using last 10000 MCMC simulations
