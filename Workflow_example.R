@@ -50,7 +50,7 @@ graphics.off()
 
 # Install necessary Packages
 
-list.of.packages <- c("BASS","lhs","caTools","Metrics","sensobol","plotrix")
+list.of.packages <- c("BASS","lhs","caTools","Metrics","sensobol","plotrix","MASS","fields")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -62,6 +62,8 @@ library(caTools)
 library(Metrics)
 library(sensobol)
 library(plotrix)
+library(MASS)
+library(fields)
 
 
 
@@ -203,7 +205,7 @@ dev.off()
 res <- Observation - Fit_Y_obs
 
 # Define number of bootstrapping
-N=200  
+N=10000  
 
 # Perform the bootstrap sampling on residuals
 white.boot = mat.or.vec(N, N_obs) 
@@ -374,7 +376,7 @@ print(accept.rate)
 chain1[,s] <- mcmc.chains[,1]
 chain2[,s] <- mcmc.chains[,2]}
 
-
+#Check the convergence
 for(j in 1:NI){
   theta1_seeds_CI <- 2*qt(0.975,length(seeds))*sd(chain1[j,])/sqrt(length(seeds))
   if (theta1_seeds_CI<=0.05){break}}
@@ -382,8 +384,6 @@ for(j in 1:NI){
 for(k in 1:NI){
   theta2_seeds_CI <- 2*qt(0.975,length(seeds))*sd(chain2[k,])/sqrt(length(seeds))
   if (theta2_seeds_CI<=0.05){break}}
-
-
 
 
 
@@ -399,7 +399,7 @@ colors_red <- mat.or.vec(length(seeds)+1, 3)
 for (i in 1:length(seeds)){
 colors_red [i,] <- c(1/i,0,0) }
 
-#Add color black
+#Add color orange for the true model
 colors_red [i+1,] <- c(1,0.5,0)
 
 # theta1 label's name
@@ -429,7 +429,7 @@ colors_blue<- mat.or.vec(length(seeds)+1, 3)
 for (i in 1:length(seeds)){
   colors_blue [i,] <- c(0,0,1/i) }
 
-#Add color black
+#Add color orange for the true model
 colors_blue[i+1,] <- c(1,0.5,0)
 
 # theta2 label's name
@@ -532,26 +532,31 @@ dev.off()
 
 
 
-# Compare and plot the parameters densities using bootstrapping and mcmc for the same sample number
+# Compare and plot the parameters densities using bootstrapping and MCMC for the same sample number
 
-# sample from one example chain
-mcmc_sample_theta1 <- c()
-mcmc_sample_theta2 <- c()
 
-for(i in 1:length(boot.par)){
-  ind <- sample(50000:130000,1)
-  mcmc_sample_theta1[i]<- chain1[ind,1]
-  mcmc_sample_theta2[i] <- chain2[ind,2]
-} 
+#sample from the mcmc chain
 
-# Plot
+set.seed(314)
+chain1_sample=c()
+chain2_sample=c()
 
-pdf(file="boots_vs_mcmc_parameter.pdf",10,10)  
+for(i in 1:length(boot.par[,1])){
+  ind <- sample(50000:NI,1)
+  
+  chain1_sample[i] <- chain1[ind,1]
+  chain2_sample[i] <- chain2[ind,1]
+  
+}
+
+
+
+pdf(file="boots_vs_mcmc_parameter.pdf",8,10)  
 par( mfrow= c(2,1))
 par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
 
 
-plot(density(mcmc_sample_theta1),main="",xlab ="theta1",xlim=c(-12,-9),ylim=c(0,1.5),col = "red")
+plot(density(chain1_sample),main="",xlab ="theta1",xlim=c(-12,-9),ylim=c(0,1.5),col = "red")
 lines(density(boot.par[,1]),col = "orange")
 abline(v = True_theta1, lwd = 2, lty = 1,col="black");
 legend("topleft", c("theta1 estimation using mcmc","theta1 estimation using bootstrapping","theta1 true value"),
@@ -559,7 +564,7 @@ legend("topleft", c("theta1 estimation using mcmc","theta1 estimation using boot
 
 par(fig=c(0,1,0.05,0.55), new=TRUE)
 
-plot(density(mcmc_sample_theta2),main="",xlab ="theta2",xlim=c(-3,5),ylim=c(0,0.6),col = "blue")
+plot(density(chain2_sample),main="",xlab ="theta2",xlim=c(-3,5),ylim=c(0,0.6),col = "blue")
 lines(density(boot.par[,2]),col = "cyan")
 abline(v = True_theta2, lwd = 2, lty = 1,col="black");
 legend("topleft", c("theta2 estimation using mcmc","theta2 estimation using bootstrapping","theta2 true value"),
@@ -569,17 +574,38 @@ dev.off()
 
 
 
-# Plot the last 10000 theta1 and theta2 values for an example chain
-pdf(file="mcmc_parameters.pdf",8,6)  
+# Plot and compare the last 10000 theta1 and theta2 values for MCMC and bootstrapping 
+pdf(file="mcmc_parameters.pdf",8,10)  
+par( mfrow= c(2,1))
+par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
 
-plot(chain1[(NI-10000):NI,1],chain2[(NI-10000):NI,1],lwd=1,ylab ="theta2",xlab ="theta1",col="blue",pch=20)
+plot(chain1_sample,chain2_sample,lwd=1,ylab ="theta2",xlab ="theta1",col="blue",pch=20)
 points(True_theta1,True_theta2,pch=4, lwd = 4,col="black")
 legend("topleft", c("Estimation using mcmc","Thue value"),
+       pch=c(20,4), lty=c(NA,NA),lwd = c(1,3), col = c("blue","black"))
+
+par(fig=c(0,1,0.05,0.55), new=TRUE)
+plot(boot.par[,1],boot.par[,2],lwd=1,ylab ="theta2",xlab ="theta1",col="blue",pch=20)
+points(True_theta1,True_theta2,pch=4, lwd = 4,col="black")
+legend("topleft", c("Estimation using bootstrapping","Thue value"),
        pch=c(20,4), lty=c(NA,NA),lwd = c(1,3), col = c("blue","black"))
 dev.off()
 
 
-# Generate the fit curves using last 10000 simulations
+# Compare 2D density plots of parameters estimation using MCMC and bootstrapping
+pdf(file="2Ddensities.pdf",8,10)  
+par( mfrow= c(2,1))
+par(fig=c(0,1,0.5,1),mar=c(4,4,4,4))
+t1 <-kde2d(chain1_sample,chain2_sample,n=200)
+image.plot (t1,ylab ="theta2",xlab ="theta1",legend.args = list( text = "Density\nMCMC\n",cex = .8),col=rev(heat.colors(15)))
+
+par(fig=c(0,1,0.05,0.55), new=TRUE)
+t2 <-kde2d(boot.par[,1],boot.par[,2],n=200)
+image.plot (t2,ylab ="theta2",xlab ="theta1",  legend.args = list( text = "Density\nBootstrapping\n",cex = .8),col=rev(heat.colors(15)))
+dev.off()
+
+
+# Generate the fit curves using last 10000 MCMC simulations
 Fit_model_MCMC<- mat.or.vec(10000, length(X))
 for(j in 1:10000){
   for (i in 1:length(X)){
@@ -590,7 +616,8 @@ for(j in 1:10000){
 }
 
 
-# Generate the fit curves using mean and 5-95%CI of the last 10000 simulations
+
+# Generate the fit curves using mean and 5-95%CI of the last 10000 MCMC simulations
 
 Fit.mcmc.CI = mat.or.vec(length(X), 2)
 Fit.mcmc.mean = c()
